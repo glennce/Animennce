@@ -40,11 +40,22 @@
     .main-header-filter{
         display: flex;
         overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .main-header-filter a{
+        display: inline-block;
     }
 
     .main-section, .second-section{
         display: flex;
         flex-direction: column;
+    }
+
+    .anime-2020-list{
+        position: absolute;
+        left: 80px;
+        top: 130px;
     }
     
     .section-filter ul,.section-genres ul{
