@@ -1,0 +1,46 @@
+.anime-2020-section-container{
+    border-radius: 20px;
+    grid-column: span 3;
+    grid-row: span 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin: 20px;
+}
+
+.anime-2020-image-container{
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.anime-2020-image-container::after{
+    position: absolute;
+    border-radius: 20px;
+    left: 0;
+    content: '';
+    background-color: rgba(213, 207, 207, 0.365);
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.anime-2020-image-container:hover::after{
+    z-index: 1;
+    opacity: .5;
+}
+
+.anime-2020-section-container a{
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    text-decoration: none;
+    color: white;
+    transition: all .5s;
+}
+
+.anime-2020-section-container a:hover{
+    text-decoration: underline;
+    color: black;
+}
