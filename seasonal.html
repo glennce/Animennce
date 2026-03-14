@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seasonal Anime — AniNexus</title>
+  <meta name="description" content="Browse anime by season and year. Explore Winter, Spring, Summer, and Fall anime.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <style>
+    /* Season selector tabs */
+    .season-tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .season-tab {
+      padding: 0.55rem 1.3rem;
+      border-radius: 8px;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      background: var(--bg-card);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .season-tab:hover,
+    .season-tab.active {
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+      background: rgba(0,229,255,0.08);
+      box-shadow: 0 0 12px rgba(0,229,255,0.15);
+    }
+
+    /* Year nav */
+    .year-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .year-btn {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .year-btn:hover {
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+    }
+    .year-display {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--neon-cyan);
+      min-width: 80px;
+      text-align: center;
+    }
+
+    /* View toggle */
+    .view-toggle {
+      display: flex;
+      gap: 0.35rem;
+    }
+    .view-btn {
+      width: 36px; height: 36px;
+      border-radius: 7px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      font-size: 0.95rem;
+    }
+    .view-btn.active,
+    .view-btn:hover {
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+      background: rgba(0,229,255,0.08);
+    }
+
+    /* Top bar row */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .controls-row .spacer { flex: 1; }
+
+    /* Sort select */
+    .sort-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .sort-select:focus { border-color: var(--neon-cyan); }
+  </style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">ANI<span>NEXUS</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="seasonal.html">Seasonal</a></li>
+    <li><a href="upcoming.html">Upcoming</a></li>
+    <li><a href="favorites.html">Favorites</a></li>
+  </ul>
+  <div class="nav-search">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="globalSearch" placeholder="Search anime…" autocomplete="off">
+    <div class="search-dropdown" id="searchDropdown"></div>
+  </div>
+  <div class="nav-controls">
+    <button class="btn-icon" id="darkModeBtn" title="Toggle dark mode">🌙</button>
+    <a href="favorites.html" class="btn-icon" title="Favorites">❤️</a>
+  </div>
+  <button class="hamburger btn-icon" id="hamburger">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-menu-close" id="mobileMenuClose">✕</button>
+  <a href="index.html">Home</a>
+  <a href="seasonal.html">Seasonal</a>
+  <a href="upcoming.html">Upcoming</a>
+  <a href="favorites.html">Favorites</a>
+</div>
+
+<main>
+  <div class="page-banner">
+    <div class="container">
+      <h1 class="page-title" id="pageTitleText">🌸 Seasonal Anime</h1>
+      <p class="page-subtitle">Pick a year and season to explore the lineup.</p>
+    </div>
+  </div>
+
+  <div class="container" style="padding-top:2rem">
+
+    <!-- Year nav + Season tabs -->
+    <div class="year-nav">
+      <button class="year-btn" id="prevYear">◀</button>
+      <div class="year-display" id="yearDisplay">2026</div>
+      <button class="year-btn" id="nextYear">▶</button>
+    </div>
+
+    <div class="season-tabs" id="seasonTabs">
+      <button class="season-tab" data-season="winter">❄️ Winter</button>
+      <button class="season-tab" data-season="spring">🌸 Spring</button>
+      <button class="season-tab" data-season="summer">☀️ Summer</button>
+      <button class="season-tab" data-season="fall">🍂 Fall</button>
+    </div>
+
+    <!-- Controls row -->
+    <div class="controls-row">
+      <div style="color:var(--text-muted);font-size:0.88rem">
+        <strong id="seasonCount" style="color:var(--neon-cyan)">—</strong> anime this season
+      </div>
+      <div class="spacer"></div>
+      <select class="sort-select" id="seasonSort">
+        <option value="score">Sort: Score</option>
+        <option value="popularity">Sort: Popularity</option>
+        <option value="title">Sort: Title</option>
+        <option value="episodes">Sort: Episodes</option>
+      </select>
+      <div class="view-toggle">
+        <button class="view-btn active" id="viewGrid" title="Grid view">⊞</button>
+        <button class="view-btn" id="viewCalendar" title="Calendar view">📅</button>
+      </div>
+    </div>
+
+    <!-- Grid view -->
+    <div id="gridView">
+      <div class="anime-grid large" id="seasonalGrid"></div>
+    </div>
+
+    <!-- Calendar view (hidden by default) -->
+    <div id="calendarView" class="hidden">
+      <h3 style="font-family:'Orbitron',sans-serif;font-size:1rem;margin-bottom:1rem;color:var(--text-secondary)">
+        Air Schedule (Day of Week)
+      </h3>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+
+    <!-- Infinite scroll trigger -->
+    <div class="load-more-trigger">
+      <div class="spinner" id="spinner"></div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-logo">ANINEXUS</div>
+    <p class="footer-text">Powered by <a href="https://jikan.moe" target="_blank" style="color:var(--neon-cyan)">Jikan API</a></p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script>
+/* ============================================================
+   SEASONAL PAGE LOGIC
+   ============================================================ */
+
+const SEASONS = ['winter', 'spring', 'summer', 'fall'];
+const SEASON_EMOJIS = { winter:'❄️', spring:'🌸', summer:'☀️', fall:'🍂' };
+const DAYS_OF_WEEK  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+let currentYear, currentSeason;
+let seasonData = [];
+let currentView = 'grid';
+
+/* Determine default season from URL params or current date */
+function initDefaults() {
+  const pYear   = getParam('year');
+  const pSeason = getParam('season');
+  const now     = new Date();
+  const month   = now.getMonth() + 1;
+
+  currentYear   = parseInt(pYear) || now.getFullYear();
+  currentSeason = SEASONS.includes(pSeason) ? pSeason
+    : month <= 3 ? 'winter' : month <= 6 ? 'spring' : month <= 9 ? 'summer' : 'fall';
+}
+
+/* ---- Fetch and render seasonal anime ---- */
+async function loadSeasonal() {
+  const grid = document.getElementById('seasonalGrid');
+  grid.innerHTML = buildSkeletons(24);
+  document.getElementById('calendarGrid').innerHTML = '';
+  document.getElementById('seasonCount').textContent = '—';
+
+  // Update URL
+  history.replaceState(null, '', `?year=${currentYear}&season=${currentSeason}`);
+
+  // Update page title
+  document.getElementById('pageTitleText').textContent =
+    `${SEASON_EMOJIS[currentSeason]} ${capitalize(currentSeason)} ${currentYear}`;
+  document.title = `${capitalize(currentSeason)} ${currentYear} — AniNexus`;
+
+  // Active tab
+  document.querySelectorAll('.season-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.season === currentSeason);
+  });
+  document.getElementById('yearDisplay').textContent = currentYear;
+
+  try {
+    const data = await apiFetch(`/seasons/${currentYear}/${currentSeason}`);
+    seasonData = data.data || [];
+    document.getElementById('seasonCount').textContent = seasonData.length;
+    renderCurrentView();
+  } catch (e) {
+    grid.innerHTML = errorState(`Could not load ${capitalize(currentSeason)} ${currentYear} anime.`);
+  }
+}
+
+/* ---- Sort and render grid ---- */
+function renderGrid() {
+  const grid    = document.getElementById('seasonalGrid');
+  const sortKey = document.getElementById('seasonSort').value;
+
+  const sorted = [...seasonData].sort((a, b) => {
+    switch (sortKey) {
+      case 'score':      return (b.score || 0) - (a.score || 0);
+      case 'popularity': return (a.popularity || 9999) - (b.popularity || 9999);
+      case 'title':      return a.title.localeCompare(b.title);
+      case 'episodes':   return (b.episodes || 0) - (a.episodes || 0);
+      default:           return 0;
+    }
+  });
+
+  grid.innerHTML = sorted.map(a => buildCard(a)).join('');
+  initLazyLoad(grid);
+}
+
+/* ---- Calendar view by day of week ---- */
+function renderCalendar() {
+  const container = document.getElementById('calendarGrid');
+  // Group anime by broadcast day
+  const byDay = {};
+  DAYS_OF_WEEK.forEach(d => byDay[d] = []);
+
+  seasonData.forEach(a => {
+    const day = a.broadcast?.day; // e.g. "Mondays"
+    if (day) {
+      const dayKey = day.replace('s', ''); // "Mondays" -> "Monday"
+      if (byDay[dayKey]) byDay[dayKey].push(a);
+      else byDay['Monday']?.push(a); // fallback
+    }
+  });
+
+  container.innerHTML = `
+    ${DAYS_OF_WEEK.map(d => `<div class="cal-header">${d.slice(0,3)}</div>`).join('')}
+    ${DAYS_OF_WEEK.map(d => `
+      <div class="cal-cell">
+        <div class="cal-day-num">${byDay[d].length} shows</div>
+        ${byDay[d].map(a => `
+          <div class="cal-event" onclick="navigateTo('anime.html?id=${a.mal_id}')" title="${escAttr(a.title)}">
+            ${escHtml(a.title)}
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderCurrentView() {
+  if (currentView === 'grid') renderGrid();
+  else renderCalendar();
+}
+
+/* ---- View toggle ---- */
+document.getElementById('viewGrid').addEventListener('click', () => {
+  currentView = 'grid';
+  document.getElementById('gridView').classList.remove('hidden');
+  document.getElementById('calendarView').classList.add('hidden');
+  document.getElementById('viewGrid').classList.add('active');
+  document.getElementById('viewCalendar').classList.remove('active');
+  renderGrid();
+});
+
+document.getElementById('viewCalendar').addEventListener('click', () => {
+  currentView = 'calendar';
+  document.getElementById('gridView').classList.add('hidden');
+  document.getElementById('calendarView').classList.remove('hidden');
+  document.getElementById('viewCalendar').classList.add('active');
+  document.getElementById('viewGrid').classList.remove('active');
+  renderCalendar();
+});
+
+/* ---- Season tabs ---- */
+document.querySelectorAll('.season-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    currentSeason = tab.dataset.season;
+    loadSeasonal();
+  });
+});
+
+/* ---- Year navigation ---- */
+document.getElementById('prevYear').addEventListener('click', () => {
+  currentYear--;
+  loadSeasonal();
+});
+
+document.getElementById('nextYear').addEventListener('click', () => {
+  const maxYear = new Date().getFullYear() + 2;
+  if (currentYear < maxYear) {
+    currentYear++;
+    loadSeasonal();
+  }
+});
+
+/* ---- Sort change ---- */
+document.getElementById('seasonSort').addEventListener('change', renderGrid);
+
+/* ---- Init ---- */
+document.addEventListener('DOMContentLoaded', () => {
+  initDefaults();
+  loadSeasonal();
+});
+</script>
+</body>
+</html>

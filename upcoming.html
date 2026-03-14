@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upcoming Anime 2026 — AniNexus</title>
+  <meta name="description" content="Browse upcoming anime for 2026. Filter by season, sort by score or popularity.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">ANI<span>NEXUS</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="seasonal.html">Seasonal</a></li>
+    <li><a href="upcoming.html">Upcoming</a></li>
+    <li><a href="favorites.html">Favorites</a></li>
+  </ul>
+  <div class="nav-search">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="globalSearch" placeholder="Search anime…" autocomplete="off">
+    <div class="search-dropdown" id="searchDropdown"></div>
+  </div>
+  <div class="nav-controls">
+    <button class="btn-icon" id="darkModeBtn" title="Toggle dark mode">🌙</button>
+    <a href="favorites.html" class="btn-icon" title="Favorites">❤️</a>
+  </div>
+  <button class="hamburger btn-icon" id="hamburger">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-menu-close" id="mobileMenuClose">✕</button>
+  <a href="index.html">Home</a>
+  <a href="seasonal.html">Seasonal</a>
+  <a href="upcoming.html">Upcoming</a>
+  <a href="favorites.html">Favorites</a>
+</div>
+
+<main>
+  <!-- Page Banner -->
+  <div class="page-banner">
+    <div class="container">
+      <h1 class="page-title">📅 Upcoming Anime</h1>
+      <p class="page-subtitle">Discover what's coming soon — filter, sort, and save to favorites.</p>
+    </div>
+  </div>
+
+  <div class="container" style="padding-top:2rem">
+
+    <!-- Countdown for next season -->
+    <div class="countdown-banner" id="countdownBanner">
+      <div>
+        <div class="countdown-label">⏳ Next Season Starts</div>
+        <div class="countdown-title" id="countdownTitle">Loading…</div>
+      </div>
+      <div class="countdown-blocks">
+        <div class="countdown-block">
+          <span class="countdown-num" id="cdDays">--</span>
+          <span class="countdown-unit">Days</span>
+        </div>
+        <div class="countdown-block">
+          <span class="countdown-num" id="cdHours">--</span>
+          <span class="countdown-unit">Hours</span>
+        </div>
+        <div class="countdown-block">
+          <span class="countdown-num" id="cdMins">--</span>
+          <span class="countdown-unit">Mins</span>
+        </div>
+        <div class="countdown-block">
+          <span class="countdown-num" id="cdSecs">--</span>
+          <span class="countdown-unit">Secs</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filter-group">
+        <label>Season</label>
+        <select id="filterSeason">
+          <option value="">All Seasons</option>
+          <option value="winter">❄️ Winter</option>
+          <option value="spring">🌸 Spring</option>
+          <option value="summer">☀️ Summer</option>
+          <option value="fall">🍂 Fall</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Type</label>
+        <select id="filterType">
+          <option value="">All Types</option>
+          <option value="TV">TV</option>
+          <option value="Movie">Movie</option>
+          <option value="OVA">OVA</option>
+          <option value="ONA">ONA</option>
+          <option value="Special">Special</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Sort By</label>
+        <select id="sortBy">
+          <option value="popularity">Popularity</option>
+          <option value="score">Score</option>
+          <option value="title">Title</option>
+          <option value="episodes">Episodes</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Min Score</label>
+        <input type="number" id="minScore" min="0" max="10" step="0.1" placeholder="e.g. 7.0">
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn-primary" id="applyFilters">Apply</button>
+        <button class="btn btn-secondary" id="resetFilters">Reset</button>
+      </div>
+    </div>
+
+    <!-- Results count -->
+    <div style="margin-bottom:1.25rem;color:var(--text-muted);font-size:0.88rem">
+      Showing <strong id="resultCount" style="color:var(--neon-cyan)">—</strong> anime
+    </div>
+
+    <!-- Grid -->
+    <div class="anime-grid large" id="upcomingGrid">
+      <!-- Skeletons -->
+    </div>
+
+    <!-- Infinite scroll trigger -->
+    <div class="load-more-trigger">
+      <div class="spinner" id="spinner"></div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-logo">ANINEXUS</div>
+    <p class="footer-text">Powered by <a href="https://jikan.moe" target="_blank" style="color:var(--neon-cyan)">Jikan API</a></p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script>
+/* ============================================================
+   UPCOMING PAGE LOGIC
+   ============================================================ */
+
+let allUpcoming = [];     // Raw fetched data
+let filtered    = [];     // After filters applied
+let page        = 1;
+let isLoading   = false;
+const PAGE_SIZE = 24;
+
+/* ---- Fetch all upcoming anime ---- */
+async function fetchUpcoming() {
+  const grid = document.getElementById('upcomingGrid');
+  grid.innerHTML = buildSkeletons(24);
+
+  try {
+    // Fetch multiple pages to get a larger dataset
+    const [p1, p2] = await Promise.all([
+      apiFetch('/seasons/upcoming?limit=25&page=1'),
+      apiFetch('/seasons/upcoming?limit=25&page=2'),
+    ]);
+
+    allUpcoming = [
+      ...(p1.data || []),
+      ...(p2.data || []),
+    ];
+
+    applyFiltersAndRender(true);
+  } catch (e) {
+    grid.innerHTML = errorState('Could not load upcoming anime. Please try again.');
+  }
+}
+
+/* ---- Apply filters to allUpcoming ---- */
+function applyFiltersAndRender(reset = false) {
+  const season   = document.getElementById('filterSeason').value;
+  const type     = document.getElementById('filterType').value;
+  const sortKey  = document.getElementById('sortBy').value;
+  const minScore = parseFloat(document.getElementById('minScore').value) || 0;
+
+  filtered = allUpcoming.filter(a => {
+    if (season && a.season !== season) return false;
+    if (type   && a.type   !== type)   return false;
+    if (minScore > 0 && (a.score || 0) < minScore) return false;
+    return true;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    switch (sortKey) {
+      case 'score':    return (b.score || 0) - (a.score || 0);
+      case 'title':    return a.title.localeCompare(b.title);
+      case 'episodes': return (b.episodes || 0) - (a.episodes || 0);
+      default:         return (a.members ? 0 : 1) - (b.members ? 0 : 1); // popularity
+    }
+  });
+
+  document.getElementById('resultCount').textContent = filtered.length;
+
+  if (reset) {
+    page = 1;
+    renderPage(true);
+  }
+}
+
+/* ---- Render a page of results ---- */
+function renderPage(reset = false) {
+  const grid = document.getElementById('upcomingGrid');
+  const start = (page - 1) * PAGE_SIZE;
+  const end   = start + PAGE_SIZE;
+  const slice = filtered.slice(start, end);
+
+  if (reset) grid.innerHTML = '';
+
+  if (!slice.length && reset) {
+    grid.innerHTML = emptyState('📭', 'No Upcoming Anime', 'Try adjusting your filters.');
+    return;
+  }
+
+  grid.insertAdjacentHTML('beforeend', slice.map(a => buildCard(a)).join(''));
+  initLazyLoad(grid);
+}
+
+/* ---- Infinite scroll ---- */
+const spinner = document.getElementById('spinner');
+
+createInfiniteScroll(document.querySelector('.load-more-trigger'), async () => {
+  if (isLoading) return;
+  const maxPage = Math.ceil(filtered.length / PAGE_SIZE);
+  if (page >= maxPage) return;
+
+  isLoading = true;
+  spinner.classList.add('active');
+  await sleep(400); // slight delay for smoothness
+  page++;
+  renderPage();
+  spinner.classList.remove('active');
+  isLoading = false;
+});
+
+/* ---- Countdown to next season ---- */
+function initCountdown() {
+  const now    = new Date();
+  const year   = now.getFullYear();
+  // Season start months: Winter=Jan, Spring=Apr, Summer=Jul, Fall=Oct
+  const seasons = [
+    { name: 'Winter', date: new Date(year + 1, 0, 1) },
+    { name: 'Spring', date: new Date(year, 3, 1) },
+    { name: 'Summer', date: new Date(year, 6, 1) },
+    { name: 'Fall',   date: new Date(year, 9, 1) },
+  ];
+
+  // Find next season
+  const next = seasons.find(s => s.date > now)
+    || { name: 'Winter', date: new Date(year + 1, 0, 1) };
+
+  document.getElementById('countdownTitle').textContent =
+    `${next.name} ${next.date.getFullYear()} Season`;
+
+  startCountdown(next.date, [
+    document.getElementById('cdDays'),
+    document.getElementById('cdHours'),
+    document.getElementById('cdMins'),
+    document.getElementById('cdSecs'),
+  ]);
+}
+
+/* ---- Event listeners ---- */
+document.getElementById('applyFilters').addEventListener('click', () => {
+  applyFiltersAndRender(true);
+});
+
+document.getElementById('resetFilters').addEventListener('click', () => {
+  document.getElementById('filterSeason').value = '';
+  document.getElementById('filterType').value   = '';
+  document.getElementById('sortBy').value       = 'popularity';
+  document.getElementById('minScore').value     = '';
+  applyFiltersAndRender(true);
+});
+
+/* Re-apply on Enter key in min score */
+document.getElementById('minScore').addEventListener('keydown', e => {
+  if (e.key === 'Enter') applyFiltersAndRender(true);
+});
+
+/* ---- Init ---- */
+document.addEventListener('DOMContentLoaded', () => {
+  fetchUpcoming();
+  initCountdown();
+});
+</script>
+</body>
+</html>
