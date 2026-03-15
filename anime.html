@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AniNexus">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="theme-color" content="#00e5ff">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anime Details — AniNexus</title>
+  <meta name="description" content="Detailed anime information including synopsis, characters, trailer and more.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <style>
+    /* Back button */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: 7px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      transition: all var(--transition);
+      margin-bottom: 1.5rem;
+    }
+    .back-btn:hover {
+      color: var(--neon-cyan);
+      border-color: var(--neon-cyan);
+    }
+
+    /* Tabs for sections */
+    .detail-tabs {
+      display: flex;
+      gap: 0.25rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 2rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .detail-tabs::-webkit-scrollbar { display: none; }
+
+    .detail-tab {
+      padding: 0.7rem 1.2rem;
+      border-radius: 8px 8px 0 0;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 0.92rem;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: all var(--transition);
+    }
+    .detail-tab:hover { color: var(--text-primary); }
+    .detail-tab.active {
+      color: var(--neon-cyan);
+      border-bottom-color: var(--neon-cyan);
+      background: rgba(0,229,255,0.05);
+    }
+
+    /* Recommendation section */
+    .recommendations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+
+    /* Loading overlay */
+    .page-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 1rem;
+      color: var(--text-secondary);
+    }
+    .page-loading .spinner {
+      display: block;
+      width: 48px; height: 48px;
+      border-width: 4px;
+    }
+
+    /* Detail skeleton */
+    .detail-skeleton {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 2.5rem;
+      padding: 3rem 0;
+    }
+    .skeleton-detail-poster { aspect-ratio: 3/4; border-radius: 14px; }
+    .skeleton-detail-info { display: flex; flex-direction: column; gap: 1rem; padding-top: 1rem; }
+
+    @media (max-width: 768px) {
+      .detail-skeleton { grid-template-columns: 1fr; }
+      .skeleton-detail-poster { max-width: 200px; }
+    }
+
+    /* Related anime */
+    .related-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .related-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .related-item:hover {
+      border-color: rgba(0,229,255,0.3);
+      transform: translateX(4px);
+    }
+    .related-type {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      width: 80px;
+      flex-shrink: 0;
+    }
+    .related-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">ANI<span>NEXUS</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="seasonal.html">Seasonal</a></li>
+    <li><a href="upcoming.html">Upcoming</a></li>
+    <li><a href="favorites.html">Favorites</a></li>
+  </ul>
+  <div class="nav-search">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="globalSearch" placeholder="Search anime…" autocomplete="off">
+    <div class="search-dropdown" id="searchDropdown"></div>
+  </div>
+  <div class="nav-controls">
+    <button class="btn-icon" id="darkModeBtn" title="Toggle dark mode">🌙</button>
+    <a href="favorites.html" class="btn-icon" title="Favorites">❤️</a>
+  </div>
+  <button class="hamburger btn-icon" id="hamburger">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-menu-close" id="mobileMenuClose">✕</button>
+  <a href="index.html">Home</a>
+  <a href="seasonal.html">Seasonal</a>
+  <a href="upcoming.html">Upcoming</a>
+  <a href="favorites.html">Favorites</a>
+</div>
+
+<main id="mainContent">
+  <!-- Content injected by JS -->
+  <div class="container" style="padding-top:3rem">
+    <div class="page-loading">
+      <div class="spinner active"></div>
+      <div>Loading anime details…</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-logo">ANINEXUS</div>
+    <p class="footer-text">Powered by <a href="https://jikan.moe" target="_blank" style="color:var(--neon-cyan)">Jikan API</a></p>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script>
+/* ============================================================
+   ANIME DETAIL PAGE LOGIC
+   ============================================================ */
+
+let animeId = null;
+let animeData = null;
+
+/* ---- Tab content sections ---- */
+function buildTabs(anime, characters, recommendations) {
+  return `
+    <div class="detail-tabs" id="detailTabs">
+      <button class="detail-tab active" data-tab="overview">Overview</button>
+      <button class="detail-tab" data-tab="characters">Characters (${characters.length})</button>
+      <button class="detail-tab" data-tab="trailer">Trailer</button>
+      <button class="detail-tab" data-tab="related">Related</button>
+      <button class="detail-tab" data-tab="recommendations">Recommendations</button>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div class="tab-content" id="tab-overview">
+      <!-- Synopsis -->
+      <h3 class="detail-section-title">Synopsis</h3>
+      <p class="synopsis-text" id="synopsisText">
+        ${escHtml(anime.synopsis || 'No synopsis available.')}
+      </p>
+      <button class="btn btn-secondary mb-3" id="synopsisToggle" style="display:none">Show more</button>
+
+      <!-- Info table -->
+      <h3 class="detail-section-title">Information</h3>
+      <div class="info-table">
+        ${infoRow('Type',        anime.type || '—')}
+        ${infoRow('Episodes',    anime.episodes || 'Unknown')}
+        ${infoRow('Status',      anime.status || '—')}
+        ${infoRow('Aired',       anime.aired?.string || '—')}
+        ${infoRow('Duration',    anime.duration || '—')}
+        ${infoRow('Rating',      anime.rating || '—')}
+        ${infoRow('Studios',     (anime.studios || []).map(s => s.name).join(', ') || '—')}
+        ${infoRow('Producers',   (anime.producers || []).map(p => p.name).join(', ') || '—')}
+        ${infoRow('Source',      anime.source || '—')}
+        ${infoRow('Season',      anime.season ? `${capitalize(anime.season)} ${anime.year}` : '—')}
+        ${infoRow('Broadcast',   anime.broadcast?.string || '—')}
+        ${infoRow('Licensors',   (anime.licensors || []).map(l => l.name).join(', ') || '—')}
+      </div>
+
+      <!-- Themes (if any) -->
+      ${anime.themes?.length ? `
+        <h3 class="detail-section-title">Themes</h3>
+        <div class="genres-row mb-3">
+          ${anime.themes.map(t => `<span class="genre-tag" style="background:rgba(57,255,20,0.1);border-color:rgba(57,255,20,0.3);color:var(--neon-green)">${escHtml(t.name)}</span>`).join('')}
+        </div>
+      ` : ''}
+    </div>
+
+    <!-- CHARACTERS TAB -->
+    <div class="tab-content hidden" id="tab-characters">
+      ${characters.length ? `
+        <div class="characters-grid" id="characterGrid">
+          ${characters.slice(0, 24).map(c => `
+            <div class="character-card">
+              <img
+                src="${IMG_FALLBACK}"
+                data-src="${escAttr(c.character?.images?.jpg?.image_url || IMG_FALLBACK)}"
+                alt="${escAttr(c.character?.name || '')}"
+                class="lazy"
+                loading="lazy"
+              >
+              <div class="character-info">
+                <div class="character-name">${escHtml(c.character?.name || 'Unknown')}</div>
+                <div class="character-role">${escHtml(c.role || '')}</div>
+                ${c.voice_actors?.length ? `
+                  <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">
+                    CV: ${escHtml(c.voice_actors[0]?.person?.name || '')}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        ${characters.length > 24 ? `<p class="mt-2" style="color:var(--text-muted);font-size:0.85rem">Showing 24 of ${characters.length} characters.</p>` : ''}
+      ` : '<p style="color:var(--text-muted)">No character data available.</p>'}
+    </div>
+
+    <!-- TRAILER TAB -->
+    <div class="tab-content hidden" id="tab-trailer">
+      ${anime.trailer?.embed_url ? `
+        <div class="trailer-wrap">
+          <iframe
+            src="${escAttr(anime.trailer.embed_url)}?autoplay=0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            title="${escAttr(anime.title)} trailer"
+          ></iframe>
+        </div>
+      ` : `
+        <div class="empty-state">
+          <div class="icon">🎬</div>
+          <h3>No Trailer Available</h3>
+          <p>A trailer hasn't been linked for this title yet.</p>
+        </div>
+      `}
+    </div>
+
+    <!-- RELATED TAB -->
+    <div class="tab-content hidden" id="tab-related">
+      ${buildRelated(anime.relations || [])}
+    </div>
+
+    <!-- RECOMMENDATIONS TAB -->
+    <div class="tab-content hidden" id="tab-recommendations">
+      ${recommendations.length ? `
+        <div class="recommendations-grid">
+          ${recommendations.slice(0, 12).map(r => {
+            const a = r.entry;
+            return `
+              <article class="anime-card" onclick="navigateTo('anime.html?id=${a.mal_id}')">
+                <div class="card-poster">
+                  <img
+                    src="${IMG_FALLBACK}"
+                    data-src="${escAttr(a.images?.jpg?.large_image_url || a.images?.jpg?.image_url || IMG_FALLBACK)}"
+                    alt="${escAttr(a.title)}"
+                    class="lazy" loading="lazy"
+                  >
+                </div>
+                <div class="card-body">
+                  <h3 class="card-title">${escHtml(a.title)}</h3>
+                  <div class="card-meta"><span>👍 ${r.votes || 0} votes</span></div>
+                </div>
+              </article>
+            `;
+          }).join('')}
+        </div>
+      ` : '<p style="color:var(--text-muted)">No recommendations available.</p>'}
+    </div>
+  `;
+}
+
+function infoRow(label, value) {
+  return `
+    <div class="info-row">
+      <div class="info-label">${label}</div>
+      <div class="info-value">${escHtml(String(value))}</div>
+    </div>
+  `;
+}
+
+function buildRelated(relations) {
+  if (!relations.length) return '<p style="color:var(--text-muted)">No related entries.</p>';
+
+  return `<div class="related-list">
+    ${relations.map(rel =>
+      rel.entry.map(e => `
+        <div class="related-item" onclick="navigateTo('anime.html?id=${e.mal_id}')">
+          <div class="related-type">${escHtml(rel.relation)}</div>
+          <div class="related-title">${escHtml(e.name)}</div>
+          <div style="margin-left:auto;font-size:0.78rem;color:var(--text-muted)">${escHtml(e.type)}</div>
+        </div>
+      `).join('')
+    ).join('')}
+  </div>`;
+}
+
+/* ---- Full page render ---- */
+function renderDetailPage(anime, characters, recommendations) {
+  const isFav = favorites.has(anime.mal_id);
+  const score = anime.score;
+  const rank  = anime.rank;
+  const pop   = anime.popularity;
+
+  document.title = `${anime.title} — AniNexus`;
+
+  document.getElementById('mainContent').innerHTML = `
+    <!-- Blurred backdrop -->
+    <div class="detail-hero">
+      <div class="detail-backdrop">
+        <img src="${escAttr(anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || IMG_FALLBACK)}"
+             alt="" aria-hidden="true">
+      </div>
+
+      <div class="container" style="position:relative;z-index:1;padding-top:2rem">
+        <button class="back-btn" onclick="history.back()">← Back</button>
+
+        <div class="detail-layout">
+          <!-- Poster column -->
+          <div>
+            <div class="detail-poster">
+              <img
+                src="${escAttr(anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || IMG_FALLBACK)}"
+                alt="${escAttr(anime.title)}"
+              >
+            </div>
+            <!-- Quick actions under poster -->
+            <div style="display:flex;gap:0.5rem;margin-top:1rem;flex-direction:column">
+              <button
+                class="btn ${isFav ? 'btn-danger' : 'btn-primary'}"
+                id="mainFavBtn"
+                style="width:100%;justify-content:center"
+                onclick="toggleMainFav()"
+              >
+                ${isFav ? '💔 Remove from Favorites' : '❤️ Add to Favorites'}
+              </button>
+              <button
+                id="watchNotifBtn"
+                class="btn btn-secondary"
+                style="width:100%;justify-content:center"
+                onclick="toggleWatchNotif()"
+              >
+                🔕 Watch &amp; Get Notified
+              </button>
+              ${anime.url ? `
+                <a href="${escAttr(anime.url)}" target="_blank" rel="noopener"
+                   class="btn btn-secondary" style="justify-content:center">
+                  🔗 View on MAL
+                </a>
+              ` : ''}
+            </div>
+          </div>
+
+          <!-- Info column -->
+          <div class="detail-info">
+            <div class="genres-row">
+              ${(anime.genres || []).map(g =>
+                `<span class="genre-tag">${escHtml(g.name)}</span>`
+              ).join('')}
+              ${(anime.demographics || []).map(d =>
+                `<span class="genre-tag" style="background:rgba(255,230,0,0.1);border-color:rgba(255,230,0,0.3);color:var(--neon-yellow)">${escHtml(d.name)}</span>`
+              ).join('')}
+            </div>
+
+            <h1 class="detail-title">${escHtml(anime.title)}</h1>
+            ${anime.title_english && anime.title_english !== anime.title
+              ? `<div class="detail-title-alt">${escHtml(anime.title_english)}</div>` : ''}
+
+            <div class="stats-row">
+              ${score ? `
+                <div class="stat-item">
+                  <div class="stat-value">⭐ ${score}</div>
+                  <div class="stat-label">Score</div>
+                </div>` : ''}
+              ${rank ? `
+                <div class="stat-item">
+                  <div class="stat-value">#${rank}</div>
+                  <div class="stat-label">Rank</div>
+                </div>` : ''}
+              ${pop ? `
+                <div class="stat-item">
+                  <div class="stat-value">#${pop}</div>
+                  <div class="stat-label">Popularity</div>
+                </div>` : ''}
+              ${anime.members ? `
+                <div class="stat-item">
+                  <div class="stat-value">${(anime.members / 1000).toFixed(0)}K</div>
+                  <div class="stat-label">Members</div>
+                </div>` : ''}
+              ${anime.episodes ? `
+                <div class="stat-item">
+                  <div class="stat-value">${anime.episodes}</div>
+                  <div class="stat-label">Episodes</div>
+                </div>` : ''}
+              ${anime.status ? `
+                <div class="stat-item">
+                  <div class="stat-value" style="font-size:0.85rem">${escHtml(anime.status.replace(' of airing',''))}</div>
+                  <div class="stat-label">Status</div>
+                </div>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs + content -->
+    <div class="container" style="padding-bottom:4rem">
+      ${buildTabs(anime, characters, recommendations)}
+    </div>
+  `;
+
+  // Init tabs
+  initDetailTabs();
+
+  // Lazy load poster images
+  initLazyLoad(document.getElementById('mainContent'));
+
+  // Synopsis expand/collapse
+  initSynopsis();
+
+  // Update watch button state (async, runs after render)
+  isWatching(anime.mal_id).then(watching => {
+    const btn = document.getElementById('watchNotifBtn');
+    if (btn) {
+      btn.textContent = watching
+        ? '🔔 Watching (Notifications On)'
+        : '🔕 Watch & Get Notified';
+    }
+  }).catch(() => {});
+}
+
+/* ---- Tabs logic ---- */
+function initDetailTabs() {
+  const tabs = document.querySelectorAll('.detail-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      const target = document.getElementById(`tab-${tab.dataset.tab}`);
+      if (target) {
+        target.classList.remove('hidden');
+        // Re-init lazy load for newly visible images
+        initLazyLoad(target);
+      }
+    });
+  });
+}
+
+/* ---- Synopsis expand ---- */
+function initSynopsis() {
+  const p   = document.getElementById('synopsisText');
+  const btn = document.getElementById('synopsisToggle');
+  if (!p || !btn) return;
+
+  if (p.scrollHeight > p.clientHeight + 10) {
+    btn.style.display = 'inline-flex';
+    p.style.display = '-webkit-box';
+    p.style.webkitLineClamp = '6';
+    p.style.webkitBoxOrient = 'vertical';
+    p.style.overflow = 'hidden';
+
+    let expanded = false;
+    btn.addEventListener('click', () => {
+      expanded = !expanded;
+      p.style.webkitLineClamp = expanded ? 'unset' : '6';
+      btn.textContent = expanded ? 'Show less' : 'Show more';
+    });
+  }
+}
+
+/* ---- Favorite toggle (main button) ---- */
+function toggleMainFav() {
+  if (!animeData) return;
+  const added = favorites.toggle(animeData);
+  const btn   = document.getElementById('mainFavBtn');
+  if (btn) {
+    btn.textContent = added ? '💔 Remove from Favorites' : '❤️ Add to Favorites';
+    btn.className   = `btn ${added ? 'btn-danger' : 'btn-primary'}`;
+    btn.style.width = '100%';
+    btn.style.justifyContent = 'center';
+  }
+}
+
+/* ---- Fetch everything in parallel ---- */
+async function loadAnime() {
+  animeId = getParam('id');
+  if (!animeId || isNaN(animeId)) {
+    document.getElementById('mainContent').innerHTML = `
+      <div class="container" style="padding:5rem 0;text-align:center">
+        <div style="font-size:3rem;margin-bottom:1rem">⚠️</div>
+        <h2>Anime Not Found</h2>
+        <p style="color:var(--text-secondary);margin:1rem 0">No anime ID was provided.</p>
+        <a href="index.html" class="btn btn-primary">Back to Home</a>
+      </div>`;
+    return;
+  }
+
+  try {
+    // Fetch details and characters in parallel
+    const [detailRes, charRes, recRes] = await Promise.all([
+      apiFetch(`/anime/${animeId}/full`),
+      apiFetch(`/anime/${animeId}/characters`),
+      apiFetch(`/anime/${animeId}/recommendations`),
+    ]);
+
+    animeData = detailRes.data;
+    const characters      = charRes.data || [];
+    const recommendations = recRes.data || [];
+
+    renderDetailPage(animeData, characters, recommendations);
+
+  } catch (e) {
+    document.getElementById('mainContent').innerHTML = `
+      <div class="container" style="padding:5rem 0;text-align:center">
+        <div style="font-size:3rem;margin-bottom:1rem">⚠️</div>
+        <h2 style="color:var(--neon-pink)">Failed to Load</h2>
+        <p style="color:var(--text-secondary);margin:1rem 0">Could not fetch anime data. The API may be rate-limited.</p>
+        <button class="btn btn-primary" onclick="loadAnime()">Retry</button>
+        <a href="index.html" class="btn btn-secondary" style="margin-left:0.5rem">Go Home</a>
+      </div>`;
+  }
+}
+
+/* ---- Init ---- */
+document.addEventListener('DOMContentLoaded', loadAnime);
+</script>
+<script src="pwa.js"></script>
+</body>
+</html>
